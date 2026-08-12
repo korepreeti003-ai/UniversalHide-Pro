@@ -1,0 +1,54 @@
+name: Build UniversalHide Pro
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup NDK
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r25c
+
+      - name: Build arm64-v8a
+        run: |
+          $ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang++ \
+            -std=c++17 -O2 -fvisibility=hidden -ffunction-sections -fdata-sections \
+            -fno-exceptions -fno-rtti -shared -Wl,--gc-sections -Wl,--strip-all \
+            -Izygisk/src zygisk/src/main.cpp \
+            -llog -ldl -landroid \
+            -o arm64-v8a.so
+
+      - name: Build armeabi-v7a
+        run: |
+          $ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi26-clang++ \
+            -std=c++17 -O2 -fvisibility=hidden -ffunction-sections -fdata-sections \
+            -fno-exceptions -fno-rtti -march=armv7-a -mthumb \
+            -shared -Wl,--gc-sections -Wl,--strip-all \
+            -Izygisk/src zygisk/src/main.cpp \
+            -llog -ldl -landroid \
+            -o armeabi-v7a.so
+
+      - name: Pack ZIP
+        run: |
+          mkdir -p out/zygisk out/META-INF/com/google/android out/system/etc/props
+          cp arm64-v8a.so out/zygisk/
+          cp armeabi-v7a.so out/zygisk/
+          cp module.prop out/
+          cp customize.sh out/
+          cp service.sh out/
+          printf '#!/sbin/sh\nSKIPUNZIP=1\n. /data/adb/magisk/util_functions.sh\ninstall_module\nexit 0\n' \
+            > out/META-INF/com/google/android/update-binary
+          echo '#MAGISK' > out/META-INF/com/google/android/updater-script
+          cd out && zip -r ../UniversalHide-Pro.zip .
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: UniversalHide-Pro
+          path: UniversalHide-Pro.zip
