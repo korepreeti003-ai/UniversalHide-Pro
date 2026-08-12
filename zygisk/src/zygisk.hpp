@@ -40,18 +40,26 @@ enum class Option : int {
     DLCLOSE_MODULE_LIBRARY = 1,
 };
 
-namespace internal { struct api_table; }
+struct api_table {
+    void*    impl;
+    bool   (*registerModule)    (api_table*, struct ModuleBase*);
+    void   (*setOption)         (api_table*, Option);
+    int    (*getModuleDir)      (api_table*);
+    uint32_t (*getFlags)        (api_table*);
+    bool   (*exemptFd)          (api_table*, int);
+    int    (*connectCompanion)  (api_table*);
+    void   (*registerModuleFunc)(api_table*, void(*)(int));
+};
 
 struct Api {
-    int      connectCompanion() const;
-    int      getModuleDir()     const;
-    void     setOption(Option);
-    uint32_t getFlags()         const;
-    bool     exemptFd(int fd)   const;
-    void     registerModuleFunc(void (*func)(int)) const;
-private:
-    internal::api_table* tbl;
-    friend struct internal::api_table;
+    api_table* tbl;
+
+    void setOption(Option o)                        { tbl->setOption(tbl, o); }
+    int  getModuleDir()                             { return tbl->getModuleDir(tbl); }
+    uint32_t getFlags()                             { return tbl->getFlags(tbl); }
+    bool exemptFd(int fd)                           { return tbl->exemptFd(tbl, fd); }
+    int  connectCompanion()                         { return tbl->connectCompanion(tbl); }
+    void registerModuleFunc(void(*f)(int))          { tbl->registerModuleFunc(tbl, f); }
 };
 
 struct ModuleBase {
@@ -63,33 +71,15 @@ struct ModuleBase {
     virtual ~ModuleBase() = default;
 };
 
-namespace internal {
-struct api_table {
-    void*    impl;
-    bool   (*registerModule)    (api_table*, ModuleBase*);
-    void   (*setOption)         (api_table*, Option);
-    int    (*getModuleDir)      (api_table*);
-    uint32_t (*getFlags)        (api_table*);
-    bool   (*exemptFd)          (api_table*, int);
-    int    (*connectCompanion)  (api_table*);
-    void   (*registerModuleFunc)(api_table*, void(*)(int));
-};
-inline void     Api::setOption(Option o)             { tbl->setOption(tbl, o); }
-inline int      Api::getModuleDir() const            { return tbl->getModuleDir(tbl); }
-inline uint32_t Api::getFlags()     const            { return tbl->getFlags(tbl); }
-inline bool     Api::exemptFd(int fd) const          { return tbl->exemptFd(tbl, fd); }
-inline int      Api::connectCompanion() const        { return tbl->connectCompanion(tbl); }
-inline void     Api::registerModuleFunc(void(*f)(int)) const { tbl->registerModuleFunc(tbl, f); }
-}
-}
+} // namespace zygisk
 
-#define REGISTER_ZYGISK_MODULE(clazz)                                               \
-    __attribute__((visibility("default")))                                          \
-    extern "C" void zygisk_module_entry(                                            \
-            zygisk::internal::api_table* tbl, JNIEnv* env) {                       \
-        auto* api = reinterpret_cast<zygisk::Api*>(new char[sizeof(zygisk::Api)]); \
-        reinterpret_cast<zygisk::internal::api_table**>(api)[0] = tbl;             \
-        auto* mod = new clazz();                                                    \
-        tbl->registerModule(tbl, mod);                                              \
-        mod->onLoad(api, env);                                                      \
+#define REGISTER_ZYGISK_MODULE(clazz)                                        \
+    __attribute__((visibility("default")))                                   \
+    extern "C" void zygisk_module_entry(                                     \
+            zygisk::api_table* tbl, JNIEnv* env) {                          \
+        zygisk::Api* api = new zygisk::Api();                                \
+        api->tbl = tbl;                                                      \
+        zygisk::ModuleBase* mod = new clazz();                               \
+        tbl->registerModule(tbl, mod);                                       \
+        mod->onLoad(api, env);                                               \
 }
