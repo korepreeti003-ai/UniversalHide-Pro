@@ -1,17 +1,14 @@
 #!/system/bin/sh
+
 SKIPUNZIP=1
+MODPATH="$MODPATH"
 
 ui_print "━━━━━━━━━━━━━━━━━━━━━━━━━━"
 ui_print "   UniversalHide Pro v1.0"
 ui_print "   by Temu"
 ui_print "━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-if [ "$ZYGISK_ENABLED" != "1" ]; then
-    ui_print "[!] Zygisk not enabled!"
-    abort "Enable Zygisk in Magisk settings first"
-fi
-
-unzip -o "$ZIPFILE" 'zygisk/*' -d "$MODPATH"
+unzip -o "$ZIPFILE" 'zygisk/*' -d "$MODPATH" >&2
 
 mkdir -p "$MODPATH/system/etc/props"
 
@@ -35,5 +32,4 @@ EOF
 
 set_perm_recursive "$MODPATH" root root 0755 0644
 
-ui_print "[+] Props injected"
 ui_print "[✓] Done! Reboot to activate"
