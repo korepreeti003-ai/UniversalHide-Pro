@@ -36,16 +36,19 @@ jobs:
 
       - name: Pack ZIP
         run: |
-          mkdir -p out/zygisk out/META-INF/com/google/android out/system/etc/props
-          cp arm64-v8a.so out/zygisk/
-          cp armeabi-v7a.so out/zygisk/
-          cp module.prop out/
-          cp customize.sh out/
-          cp service.sh out/
+          mkdir -p out/zygisk
+          mkdir -p out/META-INF/com/google/android
+          mkdir -p out/system/etc/props
+          cp arm64-v8a.so out/zygisk/arm64-v8a.so
+          cp armeabi-v7a.so out/zygisk/armeabi-v7a.so
+          cp module.prop out/module.prop
+          cp customize.sh out/customize.sh
+          cp service.sh out/service.sh
           printf '#!/sbin/sh\nSKIPUNZIP=1\n. /data/adb/magisk/util_functions.sh\ninstall_module\nexit 0\n' \
             > out/META-INF/com/google/android/update-binary
           echo '#MAGISK' > out/META-INF/com/google/android/updater-script
-          cd out && zip -r ../UniversalHide-Pro.zip .
+          cd out && zip -r9 ../UniversalHide-Pro.zip .
+          cd .. && ls -la out/zygisk/
 
       - name: Upload
         uses: actions/upload-artifact@v4
