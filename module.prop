@@ -1,0 +1,7 @@
+id=universalhide_pro
+name=UniversalHide Pro
+version=v1.0
+versionCode=10
+author=Temu
+description=Advanced root/bootloader hide + overlay UI
+minMagisk=26000
