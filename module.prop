@@ -6,3 +6,4 @@ author=Temu
 description=Advanced root/bootloader hide + overlay UI
 minMagisk=26000
 updateJson=
+action=action.sh
