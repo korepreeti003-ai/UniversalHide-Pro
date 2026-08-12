@@ -48,7 +48,8 @@ jobs:
             > out/META-INF/com/google/android/update-binary
           echo '#MAGISK' > out/META-INF/com/google/android/updater-script
           cd out && zip -r9 ../UniversalHide-Pro.zip .
-          cd .. && ls -la out/zygisk/
+          echo "=== ZIP Contents ==="
+          unzip -l ../UniversalHide-Pro.zip
 
       - name: Upload
         uses: actions/upload-artifact@v4
